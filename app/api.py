@@ -66,7 +66,7 @@ def startup():
 
     print("Initializing system...")
 
-    dataset_folder = extract_dataset("mini_newsgroups.tar.gz")
+    dataset_folder = extract_dataset("20_newsgroups.tar.gz")
     documents, labels = load_documents(dataset_folder)
 
     engine = EmbeddingEngine()
