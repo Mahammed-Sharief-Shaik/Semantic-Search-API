@@ -25,7 +25,7 @@ DATA_DIR = Path("data")
 
 #     return extract_path
 
-def extract_dataset(tar_path, extract_path="data/20_newsgroups"):
+def extract_dataset(tar_path, extract_path="data/mini_newsgroups"):
 
     if os.path.exists(extract_path):
         print("Dataset already extracted.")

@@ -6,6 +6,7 @@ __pycache__/
 venv/
 __pycache__/
 data/20_newsgroups/
+data/mini_newsgroups/
 .cache/
 
 
