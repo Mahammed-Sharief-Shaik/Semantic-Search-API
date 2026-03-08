@@ -8,6 +8,8 @@ from app.dataset_loader import extract_dataset, load_documents
 from app.embeddings import EmbeddingEngine
 from app.clustering import FuzzyClusterer
 from app.semantic_cache import SemanticCache
+import threading
+
 
 
 app = FastAPI(title="Semantic Search API")
@@ -59,8 +61,38 @@ class QueryRequest(BaseModel):
 
 # print("System ready.")
 
-@app.on_event("startup")
-def startup():
+# @app.on_event("startup")
+# def startup():
+
+#     global engine, clusterer, cache
+
+#     print("Initializing system...")
+
+#     dataset_folder = extract_dataset("20_newsgroups.tar.gz")
+#     documents, labels = load_documents(dataset_folder)
+
+#     engine = EmbeddingEngine()
+
+#     # Load or generate embeddings
+#     if os.path.exists("data/embeddings.npy"):
+#         print("Loading cached embeddings...")
+#         embeddings = np.load("data/embeddings.npy")
+#     else:
+#         print("Generating embeddings...")
+#         embeddings = engine.generate_embeddings(documents)
+#         os.makedirs("data", exist_ok=True)
+#         np.save("data/embeddings.npy", embeddings)
+
+#     engine.build_faiss_index(embeddings, documents, labels)
+
+#     clusterer = FuzzyClusterer()
+#     clusterer.find_optimal_clusters(embeddings)
+
+#     cache = SemanticCache(threshold=0.70)
+
+#     print("System ready.")
+
+def initialize_system():
 
     global engine, clusterer, cache
 
@@ -71,7 +103,6 @@ def startup():
 
     engine = EmbeddingEngine()
 
-    # Load or generate embeddings
     if os.path.exists("data/embeddings.npy"):
         print("Loading cached embeddings...")
         embeddings = np.load("data/embeddings.npy")
@@ -90,6 +121,10 @@ def startup():
 
     print("System ready.")
 
+@app.on_event("startup")
+def startup():
+    threading.Thread(target=initialize_system).start()
+
 
 
 # -------------------------
@@ -97,6 +132,9 @@ def startup():
 # -------------------------
 def process_query(query):
 
+
+    if engine is None:
+        return {"message": "System still initializing. Please try again shortly."}
 
     # query_embedding = engine.model.encode([query])[0]
     query_embedding = engine.model.encode(
