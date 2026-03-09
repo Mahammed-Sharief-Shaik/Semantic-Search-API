@@ -9,7 +9,7 @@ class FuzzyClusterer:
         self.n_clusters = None
 
 
-    def find_optimal_clusters(self, embeddings, cluster_range=[5, 8, 10, 12, 15, 20]):
+    def find_optimal_clusters(self, embeddings, cluster_range=[5]):
         """
         Determine the optimal number of clusters using BIC.
         """
