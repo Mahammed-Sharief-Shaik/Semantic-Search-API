@@ -22,6 +22,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+engine = None
+clusterer = None
+cache = None
+
 # -------------------------
 # Request Model
 # -------------------------
@@ -29,51 +33,19 @@ app.add_middleware(
 class QueryRequest(BaseModel):
     query: str
 
+    
 
-# -------------------------
-# Initialize System
-# -------------------------
-# @app.on_event("startup")
-# def startup():
-#     global engine, clusterer, cache
-
-# print("Initializing system...")
-
-# dataset_folder = extract_dataset("mini_newsgroups.tar.gz")
-# documents, labels = load_documents(dataset_folder)
-
-# engine = EmbeddingEngine()
-
-# embeddings = engine.generate_embeddings(documents)
-# if os.path.exists("data/embeddings.npy"):
-#     print("Loading cached embeddings...")
-#     embeddings = np.load("data/embeddings.npy")
-# else:
-#     embeddings = engine.generate_embeddings(documents)
-#     np.save("data/embeddings.npy", embeddings)
-
-# engine.build_faiss_index(embeddings, documents, labels)
-
-# clusterer = FuzzyClusterer()
-# clusterer.find_optimal_clusters(embeddings)
-
-# cache = SemanticCache(threshold=0.70)
-
-# print("System ready.")
-
-# @app.on_event("startup")
-# def startup():
+# def initialize_system():
 
 #     global engine, clusterer, cache
 
 #     print("Initializing system...")
 
-#     dataset_folder = extract_dataset("20_newsgroups.tar.gz")
+#     dataset_folder = extract_dataset("data/mini_newsgroups.tar.gz")
 #     documents, labels = load_documents(dataset_folder)
 
 #     engine = EmbeddingEngine()
 
-#     # Load or generate embeddings
 #     if os.path.exists("data/embeddings.npy"):
 #         print("Loading cached embeddings...")
 #         embeddings = np.load("data/embeddings.npy")
@@ -96,30 +68,35 @@ def initialize_system():
 
     global engine, clusterer, cache
 
-    print("Initializing system...")
+    try:
 
-    dataset_folder = extract_dataset("data/mini_newsgroups.tar.gz")
-    documents, labels = load_documents(dataset_folder)
+        print("Initializing system...")
 
-    engine = EmbeddingEngine()
+        dataset_folder = extract_dataset("data/mini_newsgroups.tar.gz")
+        documents, labels = load_documents(dataset_folder)
 
-    if os.path.exists("data/embeddings.npy"):
-        print("Loading cached embeddings...")
-        embeddings = np.load("data/embeddings.npy")
-    else:
-        print("Generating embeddings...")
-        embeddings = engine.generate_embeddings(documents)
-        os.makedirs("data", exist_ok=True)
-        np.save("data/embeddings.npy", embeddings)
+        engine = EmbeddingEngine()
 
-    engine.build_faiss_index(embeddings, documents, labels)
+        if os.path.exists("data/embeddings.npy"):
+            print("Loading cached embeddings...")
+            embeddings = np.load("data/embeddings.npy")
+        else:
+            print("Generating embeddings...")
+            embeddings = engine.generate_embeddings(documents)
+            os.makedirs("data", exist_ok=True)
+            np.save("data/embeddings.npy", embeddings)
 
-    clusterer = FuzzyClusterer()
-    clusterer.find_optimal_clusters(embeddings)
+        engine.build_faiss_index(embeddings, documents, labels)
 
-    cache = SemanticCache(threshold=0.70)
+        clusterer = FuzzyClusterer()
+        clusterer.find_optimal_clusters(embeddings)
 
-    print("System ready.")
+        cache = SemanticCache(threshold=0.70)
+
+        print("System ready.")
+
+    except Exception as e:
+        print("SYSTEM INITIALIZATION FAILED:", e)
 
 @app.on_event("startup")
 def startup():
@@ -168,36 +145,6 @@ def process_query(query):
 async def query_system(request: QueryRequest):
 
     return await run_in_threadpool(process_query, request.query)
-
-# @app.post("/query")
-# def query_system(request: QueryRequest):
-
-#     query = request.query
-
-#     query_embedding = engine.model.encode([query])[0]
-
-#     cluster_id, _ = clusterer.predict_cluster(query_embedding)
-
-#     cache_result = cache.lookup(query_embedding, cluster_id)
-
-#     if cache_result["cache_hit"]:
-
-#         return {
-#             "cache_hit": True,
-#             "matched_query": cache_result["matched_query"],
-#             "similarity": cache_result["similarity"],
-#             "results": cache_result["result"]
-#         }
-
-#     results = engine.search(query)
-
-#     cache.store(query, query_embedding, results, cluster_id)
-
-#     return {
-#         "cache_hit": False,
-#         "results": results
-#     }
-
 
 # -------------------------
 # Cache Stats Endpoint
