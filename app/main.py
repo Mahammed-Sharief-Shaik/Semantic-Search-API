@@ -62,31 +62,6 @@ def main():
     # Test search
     # -------------------------
 
-
-
-    # while True:
-
-    #     query = input("Enter query (or type 'exit'): ")
-
-    #     if query.lower() == "exit":
-    #         break
-
-    #     results = engine.search(query)
-
-    #     print("\nTop Results:\n")
-
-    #     # for i, doc in enumerate(results):
-
-    #     #     print(f"Result {i+1}:")
-    #     #     print(doc[:300])
-    #     #     print("-" * 50)
-    #     for i, result in enumerate(results):
-    #         print(f"Result {i+1}")
-    #         print("Category:", result["label"])
-    #         print(result["document"][:300])
-    #         print("-" * 50)
-
-
     # Initialize cache
     cache = SemanticCache(threshold=0.70)
 

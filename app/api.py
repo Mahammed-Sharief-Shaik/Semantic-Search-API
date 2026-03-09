@@ -8,23 +8,30 @@ from app.dataset_loader import extract_dataset, load_documents
 from app.embeddings import EmbeddingEngine
 from app.clustering import FuzzyClusterer
 from app.semantic_cache import SemanticCache
+from contextlib import asynccontextmanager
 import threading
-
-
-
-app = FastAPI(title="Semantic Search API")
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # allow all origins
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 engine = None
 clusterer = None
 cache = None
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+
+    print("Starting API...")
+
+    threading.Thread(target=initialize_system).start()
+
+    yield
+
+    print("Shutting down API...")
+
+
+app = FastAPI(
+    title="Semantic Search API",
+    lifespan=lifespan
+)
 
 # -------------------------
 # Request Model
@@ -32,37 +39,6 @@ cache = None
 
 class QueryRequest(BaseModel):
     query: str
-
-    
-
-# def initialize_system():
-
-#     global engine, clusterer, cache
-
-#     print("Initializing system...")
-
-#     dataset_folder = extract_dataset("data/mini_newsgroups.tar.gz")
-#     documents, labels = load_documents(dataset_folder)
-
-#     engine = EmbeddingEngine()
-
-#     if os.path.exists("data/embeddings.npy"):
-#         print("Loading cached embeddings...")
-#         embeddings = np.load("data/embeddings.npy")
-#     else:
-#         print("Generating embeddings...")
-#         embeddings = engine.generate_embeddings(documents)
-#         os.makedirs("data", exist_ok=True)
-#         np.save("data/embeddings.npy", embeddings)
-
-#     engine.build_faiss_index(embeddings, documents, labels)
-
-#     clusterer = FuzzyClusterer()
-#     clusterer.find_optimal_clusters(embeddings)
-
-#     cache = SemanticCache(threshold=0.70)
-
-#     print("System ready.")
 
 def initialize_system():
 
@@ -98,9 +74,10 @@ def initialize_system():
     except Exception as e:
         print("SYSTEM INITIALIZATION FAILED:", e)
 
-@app.on_event("startup")
-def startup():
-    threading.Thread(target=initialize_system).start()
+# @app.on_event("startup")
+# def startup():
+#     # threading.Thread(target=initialize_system).start()
+#     print("API started successfully")
 
 
 
@@ -110,8 +87,10 @@ def startup():
 def process_query(query):
 
 
+    # if engine is None:
+    #     return {"message": "System still initializing. Please try again shortly."}
     if engine is None:
-        return {"message": "System still initializing. Please try again shortly."}
+        initialize_system()
 
     # query_embedding = engine.model.encode([query])[0]
     query_embedding = engine.model.encode(
